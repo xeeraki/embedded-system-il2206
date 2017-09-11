@@ -53,32 +53,32 @@ procedure Cyclic_Scheduler is
      Start   : Time;
      Period  : Time;
      Release : Time;
-   begin
-     loop
-    	 Start   := Clock;
+   begin    
+     	 Start   := Clock;
 	 Period  := Start + Milliseconds(1000);
     	 Release := Start + Milliseconds(500);
-     
+     loop
+	 
+	 --delay to_Duration(Milliseconds(50));
 	 X_prime := System_A(X);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
-	 Put_Line(": X executed");
-
-	 delay until Release;
-	 Put(" X : ");
+	 Put(": X executed  X : ");
+	 X := X_prime;
 	 Put_Line(Integer'Image(X_prime));
 
+	 delay to_Duration(Milliseconds(400));
          Y_prime := System_B(Y);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
-	 Put_Line(": Y executed");
-	 Put(" Y : ");
+	 Put(": Y executed  Y : ");
+	 Y := Y_prime;
 	 Put_Line(Integer'Image(Y_prime));
-
+	
+	 --delay to_Duration(Milliseconds(100));
 	 Z := System_C(X_prime,Y_prime);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
-	 Put_Line(": Z executed");
-	 Put(" Z : ");
+	 Put(": Z executed  Z : ");
 	 Put_Line(Integer'Image(Z));
-	 delay until Period;
+     delay until Period;
      end loop;   
      end Scheduler;
 
