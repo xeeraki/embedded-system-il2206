@@ -47,25 +47,33 @@ procedure Cyclic_Scheduler is
 
    task body Scheduler is
      Z : Integer; -- Output
+     X_prime: Integer;
+     Y_prime: Integer;
+
      Start   : Time;
      Period  : Time;
      Release : Time;
    begin
      loop
-     Start   := Clock;
+    	 Start   := Clock;
 	 Period  := Start + Milliseconds(1000);
-     Release := Start + Milliseconds(500);
+    	 Release := Start + Milliseconds(500);
      
-	 X := System_A(X);
+	 X_prime := System_A(X);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
 	 Put_Line(": X executed");
-	 delay until Release;
 
-     Y := System_B(Y);
+	 delay until Release;
+	 Put(" X : ");
+	 Put_Line(Integer'Image(X_prime));
+
+         Y_prime := System_B(Y);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
 	 Put_Line(": Y executed");
+	 Put(" Y : ");
+	 Put_Line(Integer'Image(Y_prime));
 
-	 Z := System_C(X,Y);
+	 Z := System_C(X_prime,Y_prime);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
 	 Put_Line(": Z executed");
 	 Put(" Z : ");
@@ -77,4 +85,3 @@ procedure Cyclic_Scheduler is
 begin
    null;
 end Cyclic_Scheduler;
-
