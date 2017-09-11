@@ -54,12 +54,12 @@ procedure Cyclic_Scheduler is
      Period  : Time;
      Release : Time;
    begin    
-     	 Start   := Clock;
+
+     loop
+	 Start   := Clock;
 	 Period  := Start + Milliseconds(1000);
     	 Release := Start + Milliseconds(500);
-     loop
-	 
-	 --delay to_Duration(Milliseconds(50));
+
 	 X_prime := System_A(X);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
 	 Put(": X executed  X : ");
@@ -78,9 +78,10 @@ procedure Cyclic_Scheduler is
 	 Put(Duration'Image(To_Duration(Clock - Start)));
 	 Put(": Z executed  Z : ");
 	 Put_Line(Integer'Image(Z));
-     delay until Period;
+    	 delay until Period;
+	 Put_Line(" ");
      end loop;   
-     end Scheduler;
+   end Scheduler;
 
 begin
    null;
