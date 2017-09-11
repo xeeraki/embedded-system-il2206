@@ -78,7 +78,6 @@ procedure Cyclic_Scheduler is
 	 Put_Line(": Z executed");
 	 Put(" Z : ");
 	 Put_Line(Integer'Image(Z));
-     delay until Period;
      end loop;   
      end Scheduler;
 
