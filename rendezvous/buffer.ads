@@ -4,12 +4,9 @@ package Buffer is
    type Index is mod N;
    type Item_Array is array(Index) of Item;
 
-   protected type CircularBuffer is
+   protected task circularbuffer is
       -- To be completed
-   private
-      A: Item_Array;
-      In_Ptr, Out_Ptr: Index := 0;
-      Count: Integer range 0..N := 0;
+      entry Put(value : in Integer);
+      entry Get(value : out Integer);
    end CircularBuffer;
 end Buffer;
-
