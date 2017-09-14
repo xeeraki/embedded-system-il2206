@@ -38,11 +38,12 @@ procedure ProducerConsumer_sem is
       Next := Clock;
       for I in 1..N loop
          -- Write to X
-         S.Wait;
+         --S.Wait;
          X := I;
-         --S.Signal;
+         S.Signal;
          --Next 'Release' in 50..250ms
          Next := Next + Milliseconds(Random(G));
+         Put("PUT...");
          Put_Line(Integer'Image(X));
          delay until Next;
       end loop;
@@ -54,8 +55,9 @@ procedure ProducerConsumer_sem is
       Next := Clock;
       for I in 1..N loop
          -- Read from X
-         --S.Wait; 
-         S.Signal; 
+         S.Wait; 
+         --S.Signal; 
+         Put("GET...");
          Put_Line(Integer'Image(X));
          Next := Next + Milliseconds(Random(G));
          delay until Next;
