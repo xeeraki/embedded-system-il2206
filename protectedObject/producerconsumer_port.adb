@@ -6,10 +6,15 @@ use Ada.Real_Time;
 
 with Ada.Numerics.Discrete_Random;
 
-procedure ProducerConsumer is
+with buffer;
+use buffer;
+
+procedure producerconsumer_port is
 
    X : Integer; -- Shared Variable
    N : constant Integer := 40; -- Number of produced and comsumed variables
+   
+   circularBufferObj : CircularBuffer;
 
    pragma Volatile(X); -- For a volatile object all reads and updates of
                        -- the object as a whole are performed directly
@@ -27,31 +32,37 @@ procedure ProducerConsumer is
 
    task body Producer is
       Next : Time;
+      Data : Integer;
    begin
       Next := Clock;
       for I in 1..N loop
          -- Write to X
-         X := I;
+        -- X := I;
          -- Next 'Release' in 50..250ms
-         Next := Next + Milliseconds(Random(G));
+         Data := Random(G);
+         circularBufferObj.Put(Data);
+         Put_Line("Producer : Adding "&Data'Img);
+         Next := Next + Milliseconds(Data);
          delay until Next;
       end loop;
    end;
 
    task body Consumer is
       Next : Time;
+      Data : Integer;
    begin
       Next := Clock;
       for I in 1..N loop
          -- Read from X
-         Put_Line(Integer'Image(X));
-         Next := Next + Milliseconds(Random(G));
+         Data := Random(G);
+         circularBufferObj.Get(Data);
+         Put_Line("Consumer: Taking"&Data'Img);
+         Next := Next + Milliseconds(Data);
          delay until Next;
       end loop;
    end;
 
 begin -- main task
    null;
-end ProducerConsumer;
-
+end producerconsumer_port;
 
