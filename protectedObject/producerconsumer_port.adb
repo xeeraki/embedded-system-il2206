@@ -32,32 +32,30 @@ procedure producerconsumer_port is
 
    task body Producer is
       Next : Time;
-      Data : Integer;
    begin
       Next := Clock;
       for I in 1..N loop
          -- Write to X
-        -- X := I;
+          X := I;
          -- Next 'Release' in 50..250ms
-         Data := Random(G);
-         circularBufferObj.Put(Data);
-         Put_Line("Producer : Adding "&Data'Img);
-         Next := Next + Milliseconds(Data);
+         
+         circularBufferObj.Put(X);
+         --Put_Line("Producer : Adding " Integer Image(I);
+         Next := Next + Milliseconds(Random(G));
          delay until Next;
       end loop;
    end;
 
    task body Consumer is
       Next : Time;
-      Data : Integer;
    begin
       Next := Clock;
       for I in 1..N loop
          -- Read from X
-         Data := Random(G);
-         circularBufferObj.Get(Data);
-         Put_Line("Consumer: Taking"&Data'Img);
-         Next := Next + Milliseconds(Data);
+         --Data := Random(G);
+         circularBufferObj.Get(X);
+         Put_Line(Integer ' Image(X));
+         Next := Next + Milliseconds(Random(G));
          delay until Next;
       end loop;
    end;
