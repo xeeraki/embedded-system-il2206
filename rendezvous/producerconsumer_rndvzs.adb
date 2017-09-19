@@ -40,8 +40,7 @@ procedure producerconsumer_rndvzs is
          -- Write to X
          -- Next 'Release' in 50..250ms
          Data := Random(G);
-         --Put(Data);
-
+         circularbuffer.Put(Data);
          Next := Next + Milliseconds(Data);
          delay until Next;
       end loop;
@@ -53,8 +52,7 @@ procedure producerconsumer_rndvzs is
    begin
       Next := Clock;
       for I in 1..N loop
-         --Get(Data);
-         Put_Line("Consumer: Taking"&Data'Img);
+         circularbuffer.Get(Data);
          Next := Next + Milliseconds(Data);
          delay until Next;
       end loop;
@@ -75,6 +73,7 @@ procedure producerconsumer_rndvzs is
    when Count < N =>
    accept Put(value : in Integer) do
    A(In_Ptr):= value;
+   Put_Line("Producer: Putting"&value'Img);
    end Put;
    In_Ptr:= In_Ptr+1;
    Count:= Count+1;
@@ -84,9 +83,10 @@ procedure producerconsumer_rndvzs is
    when Count > 0 =>
    accept Get(value : out Integer) do
    value:=A(Out_Ptr);
+   Put_Line("Consumer: Taking"&value'Img);
    end Get;
    Out_Ptr:= Out_Ptr+1;
-   Count:= Count+1;
+   Count:= Count-1;
    
    end select;
    end loop;
