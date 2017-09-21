@@ -7,8 +7,24 @@ procedure rms is
 
    package Duration_IO is new Ada.Text_IO.Fixed_IO(Duration);
    package Int_IO is new Ada.Text_IO.Integer_IO(Integer);
-   
+    
    Start : Time;
+   StartPgm : Time;
+   Dummy : Integer;
+   Index : Integer := 35;
+    
+   function F(N : Integer) return Integer;
+
+   function F(N : Integer) return Integer is
+      X : Integer := 0;
+   begin
+      for Index in 1..N loop
+         for I in 1..5000000 loop
+            X := I;
+         end loop;
+      end loop;
+      return X;
+   end F;
    
    task type T(Id: Integer; Period : Integer) is
       pragma Priority(Id);
@@ -16,17 +32,20 @@ procedure rms is
    
    task body T is
       Next : Time;
-      X : Integer;
+ --     X : Integer;
    begin
       Next := Start;
       loop
          Next := Next + Milliseconds(Period);
          -- Some dummy function
-         X := 0;
-         for Index in 1..5000000 loop
-            X := X + Index;
-         end loop;
+         Start := Clock;
+         Dummy := F(Index);
+--        Int_IO.Put(Index, 3);
+         Put("Execution Time");
+         Put(" : ");
          Duration_IO.Put(To_Duration(Clock - Start), 3, 3);
+         Put_Line("s");
+         Duration_IO.Put(To_Duration(Clock - StartPgm), 3, 3);
          Put(" : ");
          Int_IO.Put(Id, 2);
          Put_Line("");
@@ -35,35 +54,14 @@ procedure rms is
    end T;
 
    -- Example Task
-   Task_P1 : T(1,3);
-   Task_P2 : T(2,4);
-   Task_P3 : T(3,6);
+   Task_P10 : T(12, 6);
+   Task_P12 : T(8, 8);
+   Task_P14 : T(6, 12);
    
-   --function F(N : Integer) return Integer;
-
-   --function F(N : Integer) return Integer is
-   --   X : Integer := 0;
-   --begin
-   --   for Index in 1..N loop
-     --    for I in 1..5000000 loop
-     --       X := I;
-     --    end loop;
-    --  end loop;
-    --  return X;
-  -- end F;
-  -- Dummy : Integer;
 begin
-  -- Put_Line("Measurement of Execution Times");
-   --Put_Line("");
-   --for Index in 1..50 loop
-      --Start := Clock;
-      --Dummy := F(Index);
-      --Int_IO.Put(Index, 3);
-      --Put(" : ");
-     -- Duration_IO.Put(To_Duration(Clock - Start), 3, 3);
-      --Put_Line("s");
-   --end loop;
-   
-   Start := Clock;
-   
+
+  -- for Index in 1..50 loop
+      StartPgm := Clock;
+
+  -- end loop;
 end rms;
