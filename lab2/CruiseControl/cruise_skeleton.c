@@ -60,8 +60,9 @@ OS_EVENT *Mbox_Velocity;
 
 // Semaphores
 
+OS_EVENT *aSemaphore;
 // SW-Timer
-
+OS_TMR *SWtimer;
 /*
  * Types
  */
@@ -193,7 +194,7 @@ void show_position(INT16U position)
  * acceleration.
  */
 INT16S adjust_velocity(INT16S velocity, INT8S acceleration,  
-		       enum active brake_pedal, INT16U time_interval)
+               enum active brake_pedal, INT16U time_interval)
 {
   INT16S new_velocity;
   INT8U brake_retardation = 200;
@@ -233,18 +234,18 @@ void VehicleTask(void* pdata)
       OSTimeDlyHMSM(0,0,0,VEHICLE_PERIOD); 
 
       /* Non-blocking read of mailbox: 
-	   - message in mailbox: update throttle
-	   - no message:         use old throttle
+       - message in mailbox: update throttle
+       - no message:         use old throttle
       */
       msg = OSMboxPend(Mbox_Throttle, 1, &err); 
       if (err == OS_NO_ERR) 
-	     throttle = (INT8U*) msg;
+         throttle = (INT8U*) msg;
 
       /* Retardation : Factor of Terrain and Wind Resistance */
       if (velocity > 0)
-	     wind_factor = velocity * velocity / 10000 + 1;
+         wind_factor = velocity * velocity / 10000 + 1;
       else 
-	     wind_factor = (-1) * velocity * velocity / 10000 + 1;
+         wind_factor = (-1) * velocity * velocity / 10000 + 1;
          
       if (position < 4000) 
          retardation = wind_factor; // even ground
@@ -259,7 +260,7 @@ void VehicleTask(void* pdata)
               else
                   retardation = wind_factor - 5 ; // traveling steep downhill
                   
-      acceleration = *throttle / 2 - retardation;	  
+      acceleration = *throttle / 2 - retardation;     
       position = adjust_position(position, velocity, acceleration, 300); 
       velocity = adjust_velocity(velocity, acceleration, brake_pedal, 300); 
       printf("Position: %dm\n", position / 10);
@@ -324,6 +325,16 @@ void StartTask(void* pdata)
   /* 
    * Create and start Software Timer 
    */
+   void Task (void *p_arg){
+    INT8U err;
+    (void)p_arg;
+     for (;;) {
+      SWtimer = OSTmrCreate( 10,HW_TIMER_PERIOD,OS_TMR_OPT_PERIODIC,,(void *)0,“Door Close”,&err);
+     if (err == OS_ERR_NONE) {
+/* Timer was created but NOT started */
+    }
+   }
+ } 
 
   /*
    * Creation of Kernel Objects
@@ -345,30 +356,30 @@ void StartTask(void* pdata)
 
 
   err = OSTaskCreateExt(
-	   ControlTask, // Pointer to task code
-	   NULL,        // Pointer to argument that is
-	                // passed to task
-	   &ControlTask_Stack[TASK_STACKSIZE-1], // Pointer to top
-							 // of task stack
-	   CONTROLTASK_PRIO,
-	   CONTROLTASK_PRIO,
-	   (void *)&ControlTask_Stack[0],
-	   TASK_STACKSIZE,
-	   (void *) 0,
-	   OS_TASK_OPT_STK_CHK);
+       ControlTask, // Pointer to task code
+       NULL,        // Pointer to argument that is
+                    // passed to task
+       &ControlTask_Stack[TASK_STACKSIZE-1], // Pointer to top
+                             // of task stack
+       CONTROLTASK_PRIO,
+       CONTROLTASK_PRIO,
+       (void *)&ControlTask_Stack[0],
+       TASK_STACKSIZE,
+       (void *) 0,
+       OS_TASK_OPT_STK_CHK);
 
   err = OSTaskCreateExt(
-	   VehicleTask, // Pointer to task code
-	   NULL,        // Pointer to argument that is
-	                // passed to task
-	   &VehicleTask_Stack[TASK_STACKSIZE-1], // Pointer to top
-							 // of task stack
-	   VEHICLETASK_PRIO,
-	   VEHICLETASK_PRIO,
-	   (void *)&VehicleTask_Stack[0],
-	   TASK_STACKSIZE,
-	   (void *) 0,
-	   OS_TASK_OPT_STK_CHK);
+       VehicleTask, // Pointer to task code
+       NULL,        // Pointer to argument that is
+                    // passed to task
+       &VehicleTask_Stack[TASK_STACKSIZE-1], // Pointer to top
+                             // of task stack
+       VEHICLETASK_PRIO,
+       VEHICLETASK_PRIO,
+       (void *)&VehicleTask_Stack[0],
+       TASK_STACKSIZE,
+       (void *) 0,
+       OS_TASK_OPT_STK_CHK);
   
   printf("All Tasks and Kernel Objects generated!\n");
 
@@ -389,11 +400,11 @@ int main(void) {
   printf("Lab: Cruise Control\n");
  
   OSTaskCreateExt(
-	 StartTask, // Pointer to task code
+     StartTask, // Pointer to task code
          NULL,      // Pointer to argument that is
                     // passed to task
          (void *)&StartTask_Stack[TASK_STACKSIZE-1], // Pointer to top
-						     // of task stack 
+                             // of task stack 
          STARTTASK_PRIO,
          STARTTASK_PRIO,
          (void *)&StartTask_Stack[0],
