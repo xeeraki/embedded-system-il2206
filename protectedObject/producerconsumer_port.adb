@@ -36,11 +36,12 @@ procedure producerconsumer_port is
       Next := Clock;
       for I in 1..N loop
          -- Write to X
+         -- X is a global shared variable of type int declared above
           X := I;
          -- Next 'Release' in 50..250ms
-         
+         Put("Produced");
+         Put_Line(Integer'Image(X));
          circularBufferObj.Put(X);
-         --Put_Line("Producer : Adding " Integer Image(I);
          Next := Next + Milliseconds(Random(G));
          delay until Next;
       end loop;
@@ -52,9 +53,13 @@ procedure producerconsumer_port is
       Next := Clock;
       for I in 1..N loop
          -- Read from X
-         --Data := Random(G);
+         
+         --we don't have to declare new variable here 
+         --since X is declared globaly and is a shared variable between
+         --producer and consumer
          circularBufferObj.Get(X);
-         Put_Line(Integer ' Image(X));
+         Put("Consumed");
+         Put_Line(Integer'Image(X));
          Next := Next + Milliseconds(Random(G));
          delay until Next;
       end loop;
