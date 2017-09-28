@@ -46,26 +46,31 @@ procedure Cyclic_Scheduler is
    end Source_Y;
 
    task body Scheduler is
+   --declare three variable of type integer
      Z : Integer; -- Output
      X_prime: Integer;
      Y_prime: Integer;
-
+     --declare three variable of type Time
      Start   : Time;
      Period  : Time;
      Release : Time;
    begin    
 
      loop
+     --initialized the variables
 	 Start   := Clock;
 	 Period  := Start + Milliseconds(1000);
-    	 Release := Start + Milliseconds(500);
-
+     Release := Start + Milliseconds(500);
+     --function call
 	 X_prime := System_A(X);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
 	 Put(": X executed  X : ");
 	 X := X_prime;
 	 Put_Line(Integer'Image(X_prime));
-
+	 --delayed this task X with 500ms since the input Y is delayed 500ms
+	 --we used both delay untill and delay to-Duration which is commented
+	 --wit out delay we will miss the input Y in the first period.
+     --delay until Release;
 	 delay to_Duration(Milliseconds(400));
          Y_prime := System_B(Y);
 	 Put(Duration'Image(To_Duration(Clock - Start)));
