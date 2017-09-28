@@ -13,8 +13,8 @@ procedure ProducerConsumer_sem is
 
    X : Integer; -- Shared Variable
    N : constant Integer := 40; -- Number of produced and comsumed variables
-   
-   S: CountingSemaphore(40,0);
+   --binary semapgore (object created)
+   S: CountingSemaphore(1,0);
    --S1: CountingSemaphore(1,1);
    
    pragma Volatile(X); -- For a volatile object all reads and updates of
@@ -39,11 +39,13 @@ procedure ProducerConsumer_sem is
       for I in 1..N loop
          -- Write to X
          --S.Wait;
+         -- X is a shared variable defined i
          X := I;
+         --signal that the producer placed item into the X
          S.Signal;
          --Next 'Release' in 50..250ms
          Next := Next + Milliseconds(Random(G));
-         Put("PUT...");
+         Put("Produced");
          Put_Line(Integer'Image(X));
          delay until Next;
       end loop;
@@ -51,14 +53,19 @@ procedure ProducerConsumer_sem is
 
    task body Consumer is
       Next : Time;
+      Y:Integer;
    begin
       Next := Clock;
       for I in 1..N loop
-         -- Read from X
-         S.Wait; 
+         -- Read from X 
+         --wait until there is an item in the buffer X
+         S.Wait;
+         --readed value from X assigned to Y
+         Y:=X; 
          --S.Signal; 
-         Put("GET...");
-         Put_Line(Integer'Image(X));
+         --print out the value readed from the buffer X 
+         Put("Comsumed");
+         Put_Line(Integer'Image(Y));
          Next := Next + Milliseconds(Random(G));
          delay until Next;
       end loop;
