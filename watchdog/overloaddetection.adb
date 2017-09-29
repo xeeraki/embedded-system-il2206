@@ -13,11 +13,11 @@ procedure overloaddetection is
    Start : Time;
    StartPgm : Time;
    Dummy : Integer;
-   HyperPeriod : Integer := 12000;
+   HyperPeriod : Integer := 36000; -- for rms2, hyperperiod is 36000
     
    function F(N : Integer) return Integer;
 
-   function F(N : Integer) return Integer is
+   function F(N : Integer) return Integer is -- a dummy function
       X : Integer := 0;
    begin
       for Index in 1..N loop
@@ -32,11 +32,11 @@ procedure overloaddetection is
       pragma Priority(Id);
    end;
    
-   task overload is
+   task overload is   -- Overload Detection Task with the least priority
       pragma Priority(1);
    end;
    
-   task watchdog is
+   task watchdog is -- Watchdog timer task with the highest priority
       pragma Priority(30);
       entry resetTimer;
    end;
@@ -48,14 +48,14 @@ procedure overloaddetection is
       
       loop
          Next := Next + Milliseconds(Period);
-         -- Some dummy function
+        
          Start := Clock;
-         Dummy := F(ExecTime);
+         Dummy := F(ExecTime); -- Calling dummy function
          Put("Execution Time");
          Put(" : ");
-         Duration_IO.Put(To_Duration(Clock - Start), 3, 3);
+         Duration_IO.Put(To_Duration(Clock - Start), 3, 3); -- executiomn time of the task
          Put_Line("s");
-         Duration_IO.Put(To_Duration(Clock - StartPgm), 3, 3);
+         Duration_IO.Put(To_Duration(Clock - StartPgm), 3, 3); -- execution times of the program
          Put(" : ");
          Int_IO.Put(Id, 2);
          Put_Line("");
@@ -69,7 +69,7 @@ procedure overloaddetection is
    Next := Clock;
    loop
    Next := Next + Milliseconds(HyperPeriod);
-   watchdog.resetTimer;
+   watchdog.resetTimer; -- reset the watchdog timer when there is no overload
    delay until Next;
    end loop;
    end overload;
@@ -77,33 +77,26 @@ procedure overloaddetection is
    task body watchdog is 
    begin
    loop
-   --Start := Clock;
-   
    select
    
-   accept resetTimer;
+   accept resetTimer; -- reset the watchdog timer
 
    or 
 
-   delay 12.0;
-   --Duration_IO.Put(To_Duration(Clock - StartPgm), 3, 3);
-   Put_Line("    OVERLOAD");
+   delay 12.0; -- delay in case of overload.
+   Put_Line("OVERLOAD");
    exit;
    
    end select;
    end loop;
    end watchdog;
    
-   -- Example Task
+
    Task_P10 : T(20, 3000,20);
    Task_P12 : T(15, 4000,20);
    Task_P14 : T(10, 6000,20);
-   --Task_P15 : T(8,9000,40);
+   Task_P15 : T(8,9000,40); -- task for rms2
    
 begin
-
-  -- for Index in 1..50 loop
-      StartPgm := Clock;
-
-  -- end loop;
+      StartPgm := Clock; -- Start of the program
 end overloaddetection;
