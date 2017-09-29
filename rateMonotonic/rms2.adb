@@ -14,7 +14,7 @@ procedure rms2 is
    
    function F(N : Integer) return Integer;
 
-   function F(N : Integer) return Integer is
+   function F(N : Integer) return Integer is -- Dummy Function
       X : Integer := 0;
    begin
       for Index in 1..N loop
@@ -34,14 +34,14 @@ procedure rms2 is
    begin
       Next := StartPgm;
       loop
-         -- Some dummy function
+       
          Start := Clock;
-         Dummy := F(ExecTime);
+         Dummy := F(ExecTime); -- Calling Dummy Function
          Put("Execution Time");
          Put(" : ");
-         Duration_IO.Put(To_Duration(Clock - Start), 3, 3);
+         Duration_IO.Put(To_Duration(Clock - Start), 3, 3); -- execution time of task
          Put_Line("s");
-         Duration_IO.Put(To_Duration(Clock - StartPgm), 3, 3);
+         Duration_IO.Put(To_Duration(Clock - StartPgm), 3, 3); -- execution time of the program
          Put(" : ");
          Int_IO.Put(Id, 2);
          Put_Line("");
@@ -51,15 +51,11 @@ procedure rms2 is
    end T;
 
 
-   Task_P10 : T(20, 3000,48);
-   Task_P12 : T(15, 4000,48);
-   Task_P14 : T(10, 6000,48);
-   Task_P16 : T(08, 9000,96);
+   Task_P10 : T(20, 3000,20);
+   Task_P12 : T(15, 4000,20);
+   Task_P14 : T(10, 6000,20);
+   Task_P16 : T(08, 9000,40);
    
 begin
-
-  -- for Index in 1..50 loop
-      StartPgm := Clock;
-
-  -- end loop;
+      StartPgm := Clock; -- Start of the program
 end rms2;
