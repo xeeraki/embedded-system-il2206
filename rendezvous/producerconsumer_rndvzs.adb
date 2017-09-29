@@ -8,13 +8,8 @@ with Ada.Numerics.Discrete_Random;
 
 procedure producerconsumer_rndvzs is
 
-   --X : Integer; -- Shared Variable
    N : constant Integer := 40; -- Number of produced and comsumed variables
-   
-   --pragma Volatile(X); -- For a volatile object all reads and updates of
-                       -- the object as a whole are performed directly
-                       -- to memory (Ada Reference Manual, C.6)
-
+  
    -- Random Delays
    subtype Delay_Interval is Integer range 50..250;
    package Random_Delay is new Ada.Numerics.Discrete_Random (Delay_Interval);
@@ -25,7 +20,7 @@ procedure producerconsumer_rndvzs is
 
    task Consumer;
    
-   task circularbuffer is
+   task circularbuffer is  -- rendezvous
       entry Put(value : in Integer);
       entry Get(value : out Integer);
    end circularbuffer;
@@ -37,10 +32,8 @@ procedure producerconsumer_rndvzs is
    begin
       Next := Clock;
       for I in 1..N loop
-         -- Write to X
-         -- Next 'Release' in 50..250ms
-         Data := Random(G);
-         circularbuffer.Put(Data);
+         Data := Random(G); -- Random number is generated as data
+         circularbuffer.Put(Data); -- Data put into buffer 
          Next := Next + Milliseconds(Data);
          delay until Next;
       end loop;
@@ -52,7 +45,7 @@ procedure producerconsumer_rndvzs is
    begin
       Next := Clock;
       for I in 1..N loop
-         circularbuffer.Get(Data);
+         circularbuffer.Get(Data); -- data taken from buffer
          Next := Next + Milliseconds(Data);
          delay until Next;
       end loop;
@@ -63,14 +56,14 @@ procedure producerconsumer_rndvzs is
    subtype Item is Integer;
    type Index is mod N;
    type Item_Array is array(Index) of Item;
-      A: Item_Array;
-      In_Ptr, Out_Ptr: Index := 0;
-      Count: Integer range 0..N := 0;
+      A: Item_Array; -- buffer to store data
+      In_Ptr, Out_Ptr: Index := 0; -- In and Out pointers to Data
+      Count: Integer range 0..N := 0; -- Number of elements stored in bufer
    begin
    loop
    select
    
-   when Count < N =>
+   when Count < N =>  -- add data when buffer is not full
    accept Put(value : in Integer) do
    A(In_Ptr):= value;
    Put_Line("Producer: Putting"&value'Img);
@@ -80,7 +73,7 @@ procedure producerconsumer_rndvzs is
    
    or
    
-   when Count > 0 =>
+   when Count > 0 => -- take data when buffer is not empty
    accept Get(value : out Integer) do
    value:=A(Out_Ptr);
    Put_Line("Consumer: Taking"&value'Img);
