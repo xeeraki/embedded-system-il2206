@@ -26,16 +26,19 @@
     #define GAS_PEDAL_FLAG      0x08
     #define BRAKE_PEDAL_FLAG    0x04
     #define CRUISE_CONTROL_FLAG 0x02
+    #define BUTTON_FLAG         0x000f
     /* Switch Patterns */
-
-    #define TOP_GEAR_FLAG       0x00000002
     #define ENGINE_FLAG         0x00000001
+    #define TOP_GEAR_FLAG       0x00000002
     #define SWITCH_4            0x00000010
     #define SWITCH_5            0x00000020
     #define SWITCH_6            0x00000040
     #define SWITCH_7            0x00000080
     #define SWITCH_8            0x00000100
     #define SWITCH_9            0x00000200
+    #define SWITCH_FLAG         0x3f
+      case /* value */:
+    }
 
     /* LED Patterns */
 
@@ -70,7 +73,7 @@
     #define VEHICLETASK_PRIO    10
     #define CONTROLTASK_PRIO    12
     #define DETECTIONTASK_PRIO  14
-    #define WATCHDOGTASK_PRIO   1
+    #define WATCHDOGTASK_PRIO   6
     #define EXTRALOAD_PRIO      13
 
 
@@ -383,194 +386,54 @@
         return new_velocity;
     }
 
-    int cruise_velocity =0;
-    int cruise_control_increase_velocity = 0;
-    int cruise_control_decrease_velocity = 0;
-    void Button1IO(INT16S* current_velocity)
+    void ButtonIO(void* pdata)
     {
-        printf("Button1IO %d\n", buttons_pressed() );
-        if (buttons_pressed()==-14 && *current_velocity >= 20 && top_gear == on && gas_pedal == off && brake_pedal==off) {
-            cruise_control = on;
-            cruise_velocity = *current_velocity;
-            show_target_velocity(cruise_velocity/10);
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0);
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_2);
-        }
-        else if (buttons_pressed() == -16) {
-            if (cruise_control == 0 && cruise_velocity > *current_velocity && cruise_velocity >0) {
-                cruise_control_increase_velocity = 1;
-                IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0);
-            } else if (cruise_control == 0 && cruise_velocity < *current_velocity && cruise_velocity >0) {
-                cruise_control_decrease_velocity = 1;
-                IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0);
-            } else {
+        INT8U perr;
+        INT32U value;
+        printf("ButtonIO task created!\n");
 
-                IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, 0x0000);
-            }
-        }
-        printf("buttons_pressed: %d\n",buttons_pressed() );
-    }
-
-    void Button2IO(INT16S current_velocity)
-    {
-        if (buttons_pressed() == -12) {
-            brake_pedal = on;
-            cruise_control = off;
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,0x00000);//clear
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,LED_GREEN_4);
-            cruise_velocity = 0;
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_HEX_HIGH28_BASE,0x00);//clear target velocity
-        }
-        else {
-            brake_pedal = off;
-            if (! cruise_velocity > 0  ) {
-                IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,0x00000);
-            } else {
-                if (cruise_control == 0) {
-                    IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0);
-                }
-            }
-        }
-    }
-    void ButtonIO(INT16S* current_velocity, INT8U throttle)
-    {
-        int btn_reg = IORD_ALTERA_AVALON_PIO_DATA(DE2_PIO_KEYS4_BASE);
-        if (btn_reg == 7) { //buttons_pressed() == -8){
-            gas_pedal = on;
-            cruise_control = off;
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,LED_GREEN_6);
-        } else if (buttons_pressed() == -16) {
-            gas_pedal = off;
-            if (! cruise_velocity > 0  ) {
-                IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,0x00000);
-            } else {
-                IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0);
-            }
-        }
-        printf("ButtonIO buttons_pressed: %d\n",  buttons_pressed());
-    }
-    float microseconds(int ticks)
-    {
-        return (float) 1000000 * (float) ticks / (float) alt_timestamp_freq();
-    }
-    void initArray(int x[], int n)
-    {
-        int i;
-
-        for (i = 0; i < n; i++)
-            x[i] = i;
-    }
-    void start_measurement()
-    {
-        /* Flush caches */
-        alt_dcache_flush_all();
-        alt_icache_flush_all();
-        /* Measure */
-        alt_timestamp_start();
-        time_1 = alt_timestamp();
-    }
-    void stop_measurement()
-    {
-        time_2 = alt_timestamp();
-        ticks = time_2 - time_1;
-    }
-    void SwitchIO(INT16S* current_velocity, int position)
-    {
-        int w[700];
-        int tmp = 600;
-        int x[13];
-        int a, b;
-        int size = M;
-        int i, j;
-        timer_overhead = 0;
-
-        if (switches_pressed()==1) {
-            engine = on;
-            top_gear=off;
-            show_position(position);
-            printf("The engine is turned on\n");
-        } else  if (switches_pressed()==3) {
-            engine = on;
-            top_gear=on;
-            show_position(position);
-        }
-        else if (switches_pressed()==0) {
-            printf("switches_pressed()==0\n");
-            top_gear = off;
-            engine = off;
-            show_position(position);
-        }
-        else if (switches_pressed()==2) {
-
-        }
-        else if ((switches_pressed()-19)/16 >= 0) {
-            int number = (switches_pressed()-19)/16+1;
-            if (number > 50) {
-                number = 50;
-            }
-            printf("extra load %d\n", number);
-            for (i = 0; i < 10; i++) {
-                start_measurement();
-                stop_measurement();
-                timer_overhead = timer_overhead + time_2 - time_1;
-            }
-            initArray(w, 600);
-            initArray(x, 13);
-            start_measurement();
-
-            j=tmp+number*4;
-            for (i = 0; i < j; i++)
-                w[i]++;
-            stop_measurement();
-            printf("%5.2f us", (float) microseconds(ticks - timer_overhead));
-            printf("(%d ticks)\n", (int) (ticks - timer_overhead));
-
-        }
-        printf("switches_pressed: %d\n", switches_pressed());
-        printf("switches_pressed: %d\n", (switches_pressed()-19)/16);
-
-    }
-
-    void pollkey()
-    {
-        int btn_reg;
-        static int last_value = -1;
-        btn_reg = IORD_ALTERA_AVALON_PIO_DATA(DE2_PIO_KEYS4_BASE);
-        btn_reg = (~btn_reg) & 0xf;
-        if (last_value != btn_reg)
+        while(1)
         {
-            last_value = btn_reg;
-            switch (btn_reg)
+            value = BUTTON_FLAG & buttons_pressed();        //mask high bits
+            switch (value)
             {
-            case 1:
-                //run = 1;
-                break;
-            case 2:
-                //run = 0;
-                break;
-            case 4:
-                //tick (&timeloc);
-                break;
-            case 8:
-                //timeloc = 0;
-                break;
-            default:
-                break;
+               case CRUISE_CONTROL_FLAG://button 2
+                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_2);
+                    if ((top_gear == on)&&(Global_velocity >= 200)&&(gas_pedal==off)&&(brake_pedal==off))
+                    {
+                       cruise_control = on;
+                       printf("Cruise control on!\n");
+                       IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_0);
+                    }
+                    break;
+
+               case BRAKE_PEDAL_FLAG: // button 3
+                    brake_pedal=on;
+                    cruise_control=off;
+                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_4);
+                    break;
+
+               case GAS_PEDAL_FLAG: //button 4
+                    gas_pedal=on;
+                    cruise_control=off;
+                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_6);
+                    break;
+
+               case 0x0:
+                    gas_pedal=off;
+                    brake_pedal=off;
+                    if (cruise_control==on)
+                        IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_0);
+                    else
+                        IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,0);
+                    break;
+               default:
+                    break;
             }
+
         }
     }
 
-
-    int globalPosition = 0;
-
-    void setGlobalPosition(int position) {
-
-        globalPosition = position;
-    }
-
-    int getGlobalPosition() {
-        return globalPosition;
-    }
     /*
      * The task 'VehicleTask' updates the current velocity of the vehicle
      */
