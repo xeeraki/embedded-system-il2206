@@ -119,7 +119,7 @@
     enum active top_gear = off;
     enum active engine = off;
     enum active cruise_control = off;
-    enum active status = on;
+    enum active status = {signalok,overload};
 
 
 
@@ -136,8 +136,8 @@
     void TmrCallback()
     {
         // Post to the semaphore to signal that it's time to run the task.
-        OSSemPost(aSemaphore); // Releasing the key
-        OSSemPost(aSemaphore);
+        OSSemPost(Semaphore1); // Releasing the key
+        OSSemPost(Semaphore2);
 
 
     }
@@ -399,7 +399,7 @@
             {
                case CRUISE_CONTROL_FLAG://button 2
                     IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_2);
-                    if ((top_gear == on)&&(Global_velocity >= 200)&&(gas_pedal==off)&&(brake_pedal==off))
+                    if ((top_gear == on)&&(gas_pedal==off)&&(brake_pedal==off))
                     {
                        cruise_control = on;
                        printf("Cruise control on!\n");
