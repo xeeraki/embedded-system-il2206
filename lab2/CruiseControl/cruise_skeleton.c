@@ -66,6 +66,8 @@
     OS_STK WatchdogTask_Stack[TASK_STACKSIZE];
     OS_STK DetectionTask_Stack[TASK_STACKSIZE];
     OS_STK ExtraLoadTask_Stack[TASK_STACKSIZE];
+    OS_STK ButtonIO_Stack[TASK_STACKSIZE];
+    OS_STK SwitchIO_Stack[TASK_STACKSIZE];
     // Task Priorities
 
     #define STARTTASK_PRIO      5
@@ -74,12 +76,16 @@
     #define DETECTIONTASK_PRIO  14
     #define WATCHDOGTASK_PRIO   6
     #define EXTRALOAD_PRIO      13
+    #define BUTTON_PRIO        7
+    #define SWITCH_PRIO         8
 
 
     // Task Periods
 
     #define CONTROL_PERIOD  300
     #define VEHICLE_PERIOD  300
+    #define BUTTON_PERIOD   300
+    #define SWITCH_PERIOD   300
 
     /*
      * Definition of Kernel Objects
@@ -701,7 +707,7 @@ void ControlTask(void* pdata)
         }
 
         MyTmr_Button = OSTmrCreate(0,
-                              (CONTROL_PERIOD/100),
+                              (BUTTON_PERIOD/100),
                               OS_TMR_OPT_PERIODIC,
                               TmrCallback_Button,
                               NULL,
@@ -720,7 +726,7 @@ void ControlTask(void* pdata)
         }
 
         MyTmr_Switch = OSTmrCreate(0,
-                              (CONTROL_PERIOD/100),
+                              (SWITCH_PERIOD/100),
                               OS_TMR_OPT_PERIODIC,
                               TmrCallback_Switch,
                               NULL,
@@ -832,6 +838,32 @@ void ControlTask(void* pdata)
                   TASK_STACKSIZE,
                   (void *) 0,
                   OS_TASK_OPT_STK_CHK);
+
+                  err = OSTaskCreateExt(
+                       ButtonIO, // Pointer to task code
+                       NULL,        // Pointer to argument that is
+                                    // passed to task
+                       &ButtonIO_Stack[TASK_STACKSIZE-1], // Pointer to top
+                                             // of task stack
+                       BUTTON_PRIO,
+                       BUTTON_PRIO,
+                       (void *)&ButtonIO_Stack[0],
+                       TASK_STACKSIZE,
+                       (void *) 0,
+                       OS_TASK_OPT_STK_CHK);
+
+                  err = OSTaskCreateExt(
+                       SwitchIO, // Pointer to task code
+                       NULL,        // Pointer to argument that is
+                                    // passed to task
+                       &SwitchIO_Stack[TASK_STACKSIZE-1], // Pointer to top
+                                             // of task stack
+                       SWITCH_PRIO,
+                       SWITCH_PRIO,
+                       (void *)&SwitchIO_Stack[0],
+                       TASK_STACKSIZE,
+                       (void *) 0,
+                       OS_TASK_OPT_STK_CHK);
 /*
         err = OSTaskCreateExt(
                   WatchDogTask, // Pointer to task code
