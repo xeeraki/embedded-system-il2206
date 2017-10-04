@@ -436,7 +436,7 @@
     {
     OSSemPend(Sem_Button,0,&err);
     button = buttons_pressed();
-    if( button & CRUISE_CONTROL_FLAG ) {  /* key 1 */
+    if( button & CRUISE_CONTROL_FLAG ) {  /* push button1 */
         if(cruise_control == on) {
           cruise_off();
             target = 0;
@@ -446,38 +446,35 @@
                 target = *current_velocity;
                 show_target_velocity((INT8U) (target / 10));
                 //err = OSMboxPost(Mbox_Target, (void *) &target);   POSTED BELOW
-                led_green = led_green | LED_GREEN_2; // LEDG2 on
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_2); // LEDG2 on
                 cruise_control = on;
-                //printf("cruise_control on, target = %d\n", target);
             }
         }
     }
 
-    if( button & BRAKE_PEDAL_FLAG ) {     /* key 2 */
+    if( button & BRAKE_PEDAL_FLAG ) {     /* Push Button 2 */
         if(brake_pedal == off) {
             brake_pedal = on;
-            led_green = led_green | LED_GREEN_4; // LEDG4 on
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_4); // LEDG4 on
             cruise_off();
-            //printf("brake pedal down\n");
         }
     } else {
         if(brake_pedal == on) {
-            led_green = led_green & ~LED_GREEN_4; // LEDG4 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_4) // LEDG4 off
             brake_pedal = off;
-            //printf("brake pedal up\n");
         }
     }
 
-    if( (button & GAS_PEDAL_FLAG) && engine == on) {       /* key 3 */
+    if( (button & GAS_PEDAL_FLAG) && engine == on) {       /* push button 3 */
         if(gas_pedal == off) {
             gas_pedal = on;
-            led_green = led_green | LED_GREEN_6; // LEDG6 on
+          IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_6); // LEDG6 on
             cruise_off();
             //printf("gas pedal down\n");
         }
     } else {
         if(gas_pedal == on) {
-            led_green = led_green & ~LED_GREEN_6; // LEDG6 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6); // LEDG6 off
             gas_pedal = off;
             //printf("gas pedal up\n");
         }
