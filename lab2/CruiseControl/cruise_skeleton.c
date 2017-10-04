@@ -470,13 +470,12 @@
             gas_pedal = on;
           IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_6); // LEDG6 on
             cruise_off();
-            //printf("gas pedal down\n");
         }
     } else {
         if(gas_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6); // LEDG6 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6) // LEDG6 off
             gas_pedal = off;
-            //printf("gas pedal up\n");
+
         }
     }
 
