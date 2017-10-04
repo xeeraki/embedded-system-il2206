@@ -37,8 +37,7 @@
     #define SWITCH_8            0x00000100
     #define SWITCH_9            0x00000200
     #define SWITCH_FLAG         0x3f
-      case /* value */:
-    }
+
 
     /* LED Patterns */
 
@@ -89,21 +88,24 @@
     // Mailboxes
     OS_EVENT *Mbox_Throttle;
     OS_EVENT *Mbox_Velocity;
+    OS_EVENT *Mbox_Target;
     OS_EVENT *Mbox_Writeok;
 
     // Semaphores
-    OS_EVENT *Semaphore1;
-    OS_EVENT *Semaphor2;
-    OS_EVENT *Semaphor3;
-    OS_EVENT *Semaphor4;
-    OS_EVENT *Semaphor5;
-
+    OS_EVENT *Sem_Vehicle;
+    OS_EVENT *Sem_Control;
+    OS_EVENT *Sem_Button;
+    OS_EVENT *Sem_Switch;
+    OS_EVENT *Sem_ExtraLoad;
+    OS_EVENT *Sem_Watchdog;
+    OS_EVENT *Sem_SignalOk;
     // SW-Timer
-    OS_TMR *MyTmr1;
-    OS_TMR *MyTmr2;
-    OS_TMR *MyTmr3;
-    OS_TMR *MyTmr4;
-    OS_TMR *MyTmr5;
+    OS_TMR *MyTmr_Vehicle;
+    OS_TMR *MyTmr_Control;
+    OS_TMR *MyTmr_Button;
+    OS_TMR *MyTmr_Switch;
+    OS_TMR *MyTmr_Watchdog;
+    OS_TMR *MyTmr_ExtraLoad;
 
     alt_u32 ticks;
     alt_u32 time_1;
@@ -119,7 +121,7 @@
     enum active top_gear = off;
     enum active engine = off;
     enum active cruise_control = off;
-    enum active status = {signalok,overload};
+    //enum active status = {signalok,overload};
 
 
 
@@ -133,13 +135,37 @@
     alt_u32 time_1;
     alt_u32 time_2;
     alt_u32 timer_overhead;*/
-    void TmrCallback()
+    void TmrCallback_Vehicle()
     {
         // Post to the semaphore to signal that it's time to run the task.
-        OSSemPost(Semaphore1); // Releasing the key
-        OSSemPost(Semaphore2);
+        OSSemPost(Sem_Vehicle); // Releasing the key
+    }
+    void TmrCallback_Control()
+    {
+        // Post to the semaphore to signal that it's time to run the task.
+        OSSemPost(Sem_Control); // Releasing the key
+    }
+    void TmrCallback_Button()
+    {
+        // Post to the semaphore to signal that it's time to run the task.
+        OSSemPost(Sem_Button); // Releasing the key
 
+    }
+    void TmrCallback_Switch()
+    {
+        // Post to the semaphore to signal that it's time to run the task.
+        OSSemPost(Sem_Switch); // Releasing the key
+    }
+    void TmrCallback_Watchdog()
+    {
+        // Post to the semaphore to signal that it's time to run the task.
+        OSSemPost(Sem_Watchdog); // Releasing the key
 
+    }
+    void TmrCallback_ExtraLoad()
+    {
+        // Post to the semaphore to signal that it's time to run the task.
+        OSSemPost(Sem_ExtraLoad); // Releasing the key
     }
 
     int buttons_pressed(void)
@@ -269,7 +295,7 @@
         if (engine==on)
             if(top_gear==on)
             // Turn ON only those LED below remain unchanged the other LEDS
-                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_0|LED_RED_1|LED_RED_17);
+              IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_0|LED_RED_1|LED_RED_17);
             else
                 IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_0|LED_RED_17);
         else
@@ -386,52 +412,118 @@
         return new_velocity;
     }
 
-    void ButtonIO(void* pdata)
+ //turns off led and cruise control
+    void cruise_off()
+{
+    IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,~LED_GREEN_2);
+    cruise_control = off;
+    show_target_velocity(0);
+}
+
+   void ButtonIO(void* pdata)
+{
+    INT8U err;
+    INT16S target;
+    INT16S* current_velocity;
+    int button;
+    while(1)
     {
-        INT8U perr;
-        INT32U value;
-        printf("ButtonIO task created!\n");
-
-        while(1)
-        {
-            value = BUTTON_FLAG & buttons_pressed();        //mask high bits
-            switch (value)
-            {
-               case CRUISE_CONTROL_FLAG://button 2
-                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_2);
-                    if ((top_gear == on)&&(gas_pedal==off)&&(brake_pedal==off))
-                    {
-                       cruise_control = on;
-                       printf("Cruise control on!\n");
-                       IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_0);
-                    }
-                    break;
-
-               case BRAKE_PEDAL_FLAG: // button 3
-                    brake_pedal=on;
-                    cruise_control=off;
-                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_4);
-                    break;
-
-               case GAS_PEDAL_FLAG: //button 4
-                    gas_pedal=on;
-                    cruise_control=off;
-                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_6);
-                    break;
-
-               case 0x0:
-                    gas_pedal=off;
-                    brake_pedal=off;
-                    if (cruise_control==on)
-                        IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_0);
-                    else
-                        IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,0);
-                    break;
-               default:
-                    break;
+    OSSemPend(Sem_Button,0,&err);
+    button = buttons_pressed();
+    if( button & CRUISE_CONTROL_FLAG ) {  /* key 1 */
+        if(cruise_control == on) {
+          cruise_off();
+            target = 0;
+        } else if(top_gear == on) {
+            current_velocity = (INT16S*) OSMboxPend(Mbox_Velocity, 0, &err);
+            if( *current_velocity >= 200) {
+                target = *current_velocity;
+                show_target_velocity((INT8U) (target / 10));
+                //err = OSMboxPost(Mbox_Target, (void *) &target);   POSTED BELOW
+                led_green = led_green | LED_GREEN_2; // LEDG2 on
+                cruise_control = on;
+                //printf("cruise_control on, target = %d\n", target);
             }
+        }
+    }
+
+    if( button & BRAKE_PEDAL_FLAG ) {     /* key 2 */
+        if(brake_pedal == off) {
+            brake_pedal = on;
+            led_green = led_green | LED_GREEN_4; // LEDG4 on
+            cruise_off();
+            //printf("brake pedal down\n");
+        }
+    } else {
+        if(brake_pedal == on) {
+            led_green = led_green & ~LED_GREEN_4; // LEDG4 off
+            brake_pedal = off;
+            //printf("brake pedal up\n");
+        }
+    }
+
+    if( (button & GAS_PEDAL_FLAG) && engine == on) {       /* key 3 */
+        if(gas_pedal == off) {
+            gas_pedal = on;
+            led_green = led_green | LED_GREEN_6; // LEDG6 on
+            cruise_off();
+            //printf("gas pedal down\n");
+        }
+    } else {
+        if(gas_pedal == on) {
+            led_green = led_green & ~LED_GREEN_6; // LEDG6 off
+            gas_pedal = off;
+            //printf("gas pedal up\n");
+        }
+    }
+
+    //printf("ButtonIO working \n");
+    if(cruise_control == on)
+        err = OSMboxPost(Mbox_Target, (void *) &target);
+  }
+}
+
+    void SwitchIO(void* pdata)
+    {
+      INT8U err;
+      int switches;
+      INT8U current_velocity;
+
+      while(1)
+      {
+        OSSemPend(Sem_Switch,0,&err);
+        switches = switches_pressed() & 0x3;
+        if(switches & ENGINE_FLAG) {
+            if(engine == off) {
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_0);
+                engine = on;
+            }
+        } else {
+            if(engine == on) {
+                INT16S* current_velocity = (INT16S*) OSMboxPend(Mbox_Velocity, 0, &err);
+                if(*current_velocity == 0) {
+                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_0);
+                    engine = off;
+                }
+            } // else do nothing,
 
         }
+
+        if(switches & TOP_GEAR_FLAG) {
+            if(top_gear == off) {
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_1);
+                top_gear = on;
+                //printf("Turning top gear on\n");
+            } // else do nothing
+        } else {
+            if(top_gear == on) {
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_1);
+                top_gear = off;
+              cruise_off();
+                //printf("Turning top gear off\n");
+            } // else do nothing
+        }
+      }
     }
 
     /*
@@ -451,7 +543,7 @@
         printf("Vehicle task created!\n");
         while (1)
         {
-            OSSemPend(aSemaphore, 0, &err); // Trying to access the key
+            OSSemPend(Sem_Vehicle, 0, &err); // Trying to access the key
             err = OSMboxPost(Mbox_Velocity, (void *) &velocity);
             /* Non-blocking read of mailbox:
              - message in mailbox: update throttle
@@ -482,15 +574,13 @@
 
             acceleration = *throttle / 2 - retardation;
             position = adjust_position(position, velocity, acceleration, 300);
-            setGlobalPosition(position);
+            //setGlobalPosition(position);
             velocity = adjust_velocity(velocity, acceleration, brake_pedal, 300);
             show_position(position);
             printf("Position: %dm\n", position / 10);
             printf("Velocity: %4.1fm/s\n", velocity /10.0);
             printf("Throttle: %dV\n", *throttle / 10);
             show_velocity_on_sevenseg((INT8S) (velocity / 10));
-            // break inside vehicle task
-            Button2IO( (velocity/10) );
         }
     }
 
@@ -499,120 +589,56 @@
      * on sensors and generates responses.
      */
 
-    void ControlTask(void* pdata)
+void ControlTask(void* pdata)
+{
+  INT8U err;
+  INT8U throttle = 0; /* Value between 0 and 80, which is interpreted as between 0.0V and 8.0V */
+  void* msg;
+  INT16S* current_velocity;
+  INT8S diff;
+
+  cruise_off();
+
+  printf("Control Task created!\n");
+
+  while(1)
     {
-        INT8U err;
-        INT8U throttle = 40; /* Value between 0 and 80, which is interpreted as between 0.0V and 8.0V */
-        void* msg;
-        INT16S* current_velocity;
-        int btn_reg;
-        INT16S* current_output;
-        printf("Control Task created!\n");
+      msg = OSMboxPend(Mbox_Velocity, 0, &err);
+      current_velocity = (INT16S*) msg;
 
-        while (1)
-        {
+      msg = OSMboxAccept(Mbox_Target);
+      if(msg == NULL)
+        diff = 0;
+      else
+        diff = *((INT16S *) msg) - *current_velocity;
+      OSSemPend(Sem_Control, 0, &err);
 
-            OSSemPend(aSemaphore, 1, &err); // Trying to access the key
-            msg = OSMboxPend(Mbox_Velocity, 0, &err);
-            current_velocity = (INT16S*) msg;
-            //printf("Control Task!\n");
-            ButtonIO(current_velocity, throttle);
-            btn_reg = IORD_ALTERA_AVALON_PIO_DATA(DE2_PIO_KEYS4_BASE);
-            //printf("btn_reg %d\n", btn_reg);
-            int increment = 30;
-            if (btn_reg == 7) {
-                ++throttle;
-            } else if (cruise_control_increase_velocity == 1) {
-                //printf("increase velocity \n");
-                if (*current_velocity <= cruise_velocity) {
-                    throttle = throttle + increment - 16;
-                }
-
-
-                cruise_control_increase_velocity = 0;
-            }
-            else if (btn_reg == 11) {
-                if (throttle > 0) {
-                    --throttle;
-                }
-
-            } else if (cruise_control_decrease_velocity == 1 && throttle >= increment && * current_velocity >= cruise_velocity) {
-                //printf("decrease_velocity \n");
-
-                    throttle = throttle -increment;
-
-                cruise_control_decrease_velocity = 0;
-            }
-            if (btn_reg== 13) {
-                //printf("do cruise control\n" );
-                cruise_velocity = *current_velocity;
-            }
-            Button1IO(current_velocity);
-            SwitchIO(current_velocity, getGlobalPosition());
-            err = OSMboxPost(Mbox_Throttle, (void *) &throttle);
+      /* controller starts here */
+      if (cruise_control == on) {
+        if(diff < -5) {
+            //printf("no throttle!\n");
+            throttle = 0;
+        } else if(diff > 5) {
+            //printf("full throttle!\n");
+            throttle = 80;
+        } else {
+            throttle = 10;
         }
+      } else if (gas_pedal == on) {
+        throttle = 80;
+      } else {
+        throttle = 0;
+      }
+
+      err = OSMboxPost(Mbox_Throttle, (void *) &throttle);
     }
-    void WatchDogTask(void* pdata)
-    {
-        INT8U err;
-        void* msg;
-        INT8U* throttle;
-        printf("Watchdog task created!\n");
-        INT16S* current_output;
-        OS_SEM_DATA sem_data;
-        INT8U err2;
-        int i;
-        while (1)
-        {
-            for (i = 0; i < 10; i++) {
-                start_measurement();
-                stop_measurement();
-                timer_overhead = timer_overhead + time_2 - time_1;
-            }
-
-            start_measurement();
-            OSSemPend(bSemaphore, 1, &err); // Trying to access the key
-            msg = OSMboxPend(Mbox_Writeok, 0, &err);
-            current_output = (INT16S*) msg;
-            printf("Watchdog:%d\n", * current_output);
-            if ( * current_output != 17 ) {
-                printf("System overload:%d\n", * current_output);
-            }
-
-            stop_measurement();
-            float measure = (float) microseconds(ticks - timer_overhead);
-            if (measure > 7600 && measure < 10000) {
-                printf("Overload warning");
-            }
-            printf("Watchdog %5.2f us", (float) microseconds(ticks - timer_overhead));
-            printf("(%d ticks)\n", (int) (ticks - timer_overhead));
-
-
-            current_output = 0;
-        }
-    }
-    void DetectionTask(void* pdata)
-    {
-        INT8U err;
-        printf("DetectionTask created!\n");
-        int next = 17;
-        while (1)
-        {
-            OSSemPend(bSemaphore, 0, &err); // Trying to access the key
-            err = OSMboxPost(Mbox_Writeok, (void *) &next);
-            /* Check “err” */
-
-        }
-    }
-    /*
-     * The task 'StartTask' creates all other tasks kernel objects and
-     * deletes itself afterwards.
-     */
+}
 
     void StartTask(void* pdata)
     {
         INT8U err;
         void* context;
+        BOOLEAN status;
         IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_REDLED18_BASE,0X00000);
         IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_HEX_HIGH28_BASE,0X00000);
         static alt_alarm alarm;     /* Is needed for timer ISR function */
@@ -637,10 +663,10 @@
          * Create and start Software Timer
          */
 
-        MyTmr1 = OSTmrCreate(0,
+        MyTmr_Vehicle = OSTmrCreate(0,
                               (CONTROL_PERIOD/100),
                               OS_TMR_OPT_PERIODIC,
-                              TmrCallback,
+                              TmrCallback_Vehicle,
                               NULL,
                               NULL,
                               &err);
@@ -649,7 +675,102 @@
             printf("Soft timer was created \n");
         }
 
-        BOOLEAN status = OSTmrStart(MyTmr1,
+        status = OSTmrStart(MyTmr_Vehicle,&err);
+        if (status > 0 && err == OS_ERR_NONE) {
+            /* Timer was started */
+            printf("Soft timer was started!\n");
+        }
+
+        MyTmr_Control = OSTmrCreate(0,
+                              (CONTROL_PERIOD/100),
+                              OS_TMR_OPT_PERIODIC,
+                              TmrCallback_Control,
+                              NULL,
+                              NULL,
+                              &err);
+        if (err == OS_ERR_NONE) {
+            /* Timer was created */
+            printf("Soft timer was created \n");
+        }
+
+        status = OSTmrStart(MyTmr_Control,
+                                    &err);
+        if (status > 0 && err == OS_ERR_NONE) {
+            /* Timer was started */
+            printf("Soft timer was started!\n");
+        }
+
+        MyTmr_Button = OSTmrCreate(0,
+                              (CONTROL_PERIOD/100),
+                              OS_TMR_OPT_PERIODIC,
+                              TmrCallback_Button,
+                              NULL,
+                              NULL,
+                              &err);
+        if (err == OS_ERR_NONE) {
+            /* Timer was created */
+            printf("Soft timer was created \n");
+        }
+
+        status = OSTmrStart(MyTmr_Button,
+                                    &err);
+        if (status > 0 && err == OS_ERR_NONE) {
+            /* Timer was started */
+            printf("Soft timer was started!\n");
+        }
+
+        MyTmr_Switch = OSTmrCreate(0,
+                              (CONTROL_PERIOD/100),
+                              OS_TMR_OPT_PERIODIC,
+                              TmrCallback_Switch,
+                              NULL,
+                              NULL,
+                              &err);
+        if (err == OS_ERR_NONE) {
+            /* Timer was created */
+            printf("Soft timer was created \n");
+        }
+
+        status = OSTmrStart(MyTmr_Switch,
+                                    &err);
+        if (status > 0 && err == OS_ERR_NONE) {
+            /* Timer was started */
+            printf("Soft timer was started!\n");
+        }
+
+
+        MyTmr_Watchdog = OSTmrCreate(0,
+                              (CONTROL_PERIOD/100),
+                              OS_TMR_OPT_PERIODIC,
+                              TmrCallback_Watchdog,
+                              NULL,
+                              NULL,
+                              &err);
+        if (err == OS_ERR_NONE) {
+            /* Timer was created */
+            printf("Soft timer was created \n");
+        }
+
+         status = OSTmrStart(MyTmr_Watchdog,
+                                    &err);
+        if (status > 0 && err == OS_ERR_NONE) {
+            /* Timer was started */
+            printf("Soft timer was started!\n");
+        }
+
+        MyTmr_ExtraLoad = OSTmrCreate(0,
+                              (CONTROL_PERIOD/100),
+                              OS_TMR_OPT_PERIODIC,
+                              TmrCallback_ExtraLoad,
+                              NULL,
+                              NULL,
+                              &err);
+        if (err == OS_ERR_NONE) {
+            /* Timer was created */
+            printf("Soft timer was created \n");
+        }
+
+        status = OSTmrStart(MyTmr_ExtraLoad,
                                     &err);
         if (status > 0 && err == OS_ERR_NONE) {
             /* Timer was started */
@@ -662,7 +783,19 @@
         // Mailboxes
         Mbox_Throttle = OSMboxCreate((void*) 0); /* Empty Mailbox - Throttle */
         Mbox_Velocity = OSMboxCreate((void*) 0); /* Empty Mailbox - Velocity */
+        Mbox_Target = OSMboxCreate((void*) 0); /* Empty Mailbox - target velocity*/
         Mbox_Writeok = OSMboxCreate((void*) 0); /* Empty Mailbox - Write ok */
+
+
+
+        //Semaphores
+
+        Sem_Vehicle = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_Control = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_Button = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_Switch = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_Watchdog = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_ExtraLoad = OSSemCreate(1); // binary semaphore (1 key)
 
         /*
          * Create statistics task
@@ -699,7 +832,7 @@
                   TASK_STACKSIZE,
                   (void *) 0,
                   OS_TASK_OPT_STK_CHK);
-
+/*
         err = OSTaskCreateExt(
                   WatchDogTask, // Pointer to task code
                   NULL,        // Pointer to argument that is
@@ -726,7 +859,7 @@
                   (void *) 0,
                   OS_TASK_OPT_STK_CHK);
 
-
+*/
 
         printf("All Tasks and Kernel Objects generated!\n");
         /* Task deletes itself */
@@ -737,8 +870,6 @@
     int main(void) {
 
         printf("Cruise Control 20141010\n");
-        aSemaphore = OSSemCreate(1); // binary semaphore (1 key)
-        bSemaphore = OSSemCreate(1); // binary semaphore (1 key)
 
         OSTaskCreateExt(
             StartTask, // Pointer to task code
