@@ -308,7 +308,7 @@ void stop_measurement()
               out_low;
         if (cruise_control == off) {
             IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_HEX_HIGH28_BASE,out);
-            IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0);
+            //IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE, LED_GREEN_0); ///////////////////////////
         } else {
 
             IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_HEX_HIGH28_BASE,0x00);
@@ -450,7 +450,7 @@ void stop_measurement()
  //turns off led and cruise control
     void cruise_off()
 {
-    IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,~LED_GREEN_2);
+    //IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,led_green &~ LED_GREEN_2);
     cruise_control = off;
     show_target_velocity(0);
 }
@@ -489,7 +489,7 @@ void stop_measurement()
         }
     } else {
         if(brake_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_4); // LEDG4 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green &~ LED_GREEN_4); // LEDG4 off
             brake_pedal = off;
         }
     }
@@ -502,7 +502,7 @@ void stop_measurement()
         }
     } else {
         if(gas_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6); // LEDG6 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green &~ LED_GREEN_6); // LEDG6 off
             gas_pedal = off;
 
         }
@@ -533,7 +533,7 @@ void stop_measurement()
             if(engine == on) {
                 INT16S* current_velocity = (INT16S*) OSMboxPend(Mbox_Velocity, 0, &err);
                 if(*current_velocity == 0) {
-                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_0);
+                    //IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_0);
                     engine = off;
                 }
             } // else do nothing,
@@ -553,7 +553,7 @@ void stop_measurement()
          {
             if(top_gear == on) 
             {   
-                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_1);
+                //IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_1);
                 top_gear = off;
               cruise_off();
                 //printf("Turning top gear off\n");
@@ -830,6 +830,7 @@ void DetectionTask(void *pdata)
         BOOLEAN status;
         IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_REDLED18_BASE,0X00000);
         IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_HEX_HIGH28_BASE,0X00000);
+        IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,0x00000);         ///////////////////////
         static alt_alarm alarm;     /* Is needed for timer ISR function */
 
         /* Base resolution for SW timer : HW_TIMER_PERIOD ms */
@@ -863,6 +864,8 @@ void DetectionTask(void *pdata)
             /* Timer was created */
             printf("Soft timer was created \n");
         }
+
+        //IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green | LED_GREEN_2);
 
         status = OSTmrStart(MyTmr_Vehicle,&err);
         if (status > 0 && err == OS_ERR_NONE) {
