@@ -5,7 +5,6 @@
     #include "altera_avalon_pio_regs.h"
     #include "sys/alt_irq.h"
     #include "sys/alt_alarm.h"
-    #include "altera_avalon_pio_regs.h"
     #include "alt_types.h"
     #include <time.h>
     #include <sys/alt_timestamp.h>
@@ -149,6 +148,31 @@
     alt_u32 time_1;
     alt_u32 time_2;
     alt_u32 timer_overhead;*/
+
+
+// Task for Time measurements
+    float microseconds(int ticks)
+{
+  return (float) 1000000 * (float) ticks / (float) alt_timestamp_freq();
+}
+
+void start_measurement()
+{
+      /* Flush caches */
+      alt_dcache_flush_all();
+      alt_icache_flush_all();   
+      /* Measure */
+      alt_timestamp_start();
+      time_1 = alt_timestamp();
+}
+
+void stop_measurement()
+{
+      time_2 = alt_timestamp();
+      ticks = time_2 - time_1;
+}
+
+// Soft Timer Tasks
     void TmrCallback_Vehicle()
     {
         // Post to the semaphore to signal that it's time to run the task.
@@ -176,11 +200,11 @@
         OSSemPost(Sem_Watchdog); // Releasing the key
 
     }
-    void TmrCallback_ExtraLoad()
+   /* void TmrCallback_ExtraLoad()
     {
         // Post to the semaphore to signal that it's time to run the task.
         OSSemPost(Sem_ExtraLoad); // Releasing the key
-    }
+    }*/
 
     int buttons_pressed(void)
     {
@@ -467,7 +491,7 @@
         }
     } else {
         if(brake_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_4) // LEDG4 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_4); // LEDG4 off
             brake_pedal = off;
         }
     }
@@ -480,7 +504,7 @@
         }
     } else {
         if(gas_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6) // LEDG6 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6); // LEDG6 off
             gas_pedal = off;
 
         }
@@ -501,7 +525,7 @@
       while(1)
       {
         OSSemPend(Sem_Switch,0,&err);
-        switches = switches_pressed() & 0x3;
+        switches = switches_pressed() & 0x3F3;
         if(switches & ENGINE_FLAG) {
             if(engine == off) {
                 IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_0);
@@ -530,81 +554,108 @@
         else
          {
             if(top_gear == on) 
-            {
+            {   
                 IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_1);
                 top_gear = off;
               cruise_off();
                 //printf("Turning top gear off\n");
             } // else do nothing
         }
-
+    
         if(switches & SWITCH_4)
         {
+           // printf("Turning Switch 4\n");
             if ( switch4 == off ){
-                overload_array[5] = 1;
+                overload_array[5] = 2;
                 switch4 = on;
+                OSSemPost(Sem_ExtraLoad);
+               // printf("Turning Switch 4 ON\n");
             }
-            else{
-                overload_array[5] = 0;
-                switch4 = on;
-            }
+           
         }
+         else{
+                overload_array[5] = 0;
+                switch4 = off;
+                OSSemPost(Sem_ExtraLoad);
+               // printf("Turning Switch 4 OFF\n");
+            }
+            
+            
         if(switches & SWITCH_5)
         {
-            if ( switch5 == off ){
-                overload_array[4] = 1;
+            if ( switch5 == off )
+            {
+                overload_array[4] = 4;
                 switch5 = on;
+                OSSemPost(Sem_ExtraLoad);
             }
-            else{
-                overload_array[4] = 0;
-                switch5 = on;
-            }
+           
         }
+         else{
+                overload_array[4] = 0;
+                switch5 = off;
+                OSSemPost(Sem_ExtraLoad);
+            }
 
         if(switches & SWITCH_6)
         {
             if ( switch6 == off ){
-                overload_array[3] = 1;
-                switch6 = on; }
-            else{
-                overload_array[3] = 0;
-                switch6 = on; }
+                overload_array[3] = 8;
+                switch6 = on;
+                OSSemPost(Sem_ExtraLoad);
+                }
         }
+         else{
+                overload_array[3] = 0;
+                switch6 = off; 
+                OSSemPost(Sem_ExtraLoad);
+                }
 
         if(switches & SWITCH_7)
         {
             if ( switch7 == off ){
-                overload_array[2] = 1;
-                switch7 = on; }
-            else{
-                overload_array[2] = 0;
-                switch7 = on; }
+                overload_array[2] = 16;
+                switch7 = on; 
+                OSSemPost(Sem_ExtraLoad);
+                }
         }
+         else{
+                overload_array[2] = 0;
+                switch7 = off; 
+                OSSemPost(Sem_ExtraLoad);
+                }
 
         if(switches & SWITCH_8)
         {
             if ( switch8 == off ){
-                overload_array[1] = 1;
+                overload_array[1] = 32;
                 switch8 = on;
-            }
-            else{
-                overload_array[1] = 0;
-                switch8 = on;
+                OSSemPost(Sem_ExtraLoad);
             }
         }
+          else{
+                overload_array[1] = 0;
+                switch8 = off;
+                OSSemPost(Sem_ExtraLoad);
+            }
 
         if(switches & SWITCH_9)
         {
             if ( switch9 == off ){
-                overload_array[0] = 1;
+                overload_array[0] =64;
                 switch9 = on;
-            }
-            else{
-                overload_array[0] = 0;
-                switch9 = on;
+                OSSemPost(Sem_ExtraLoad);
             }
         }
-
+         else{
+                overload_array[0] = 0;
+                switch9 = off;
+                OSSemPost(Sem_ExtraLoad);
+            }
+        
+        //int i;
+        //for(i=0; i<6; i++)
+           // printf("ARRAY : %d\n", overload_array[i]);
       }
     }
 
@@ -716,6 +767,44 @@ void ControlTask(void* pdata)
     }
 }
 
+void ExtraLoadTask(void *pdata)
+{
+    int i;
+    int decimal = 0;
+    int x;
+    INT8U err;
+    
+   while(1)
+    {
+         OSSemPend(Sem_ExtraLoad,0, &err);
+         for(i=0; i<6; i++)
+            decimal += overload_array[i];
+         
+         printf("Decimal Value %d\n",decimal);
+         
+         start_measurement();  
+         while(decimal)
+         {
+            for(i=0; i<5000000; i++)
+                x= i;
+            decimal--;
+         }
+         stop_measurement();
+         printf(" Time Measured : %5.2f ms\n", (float) microseconds(ticks - timer_overhead));
+         
+         //OSSemPost(Sem_SignalOk);
+    }
+}
+
+void WatchDogTask(void *pdata)
+{
+    
+}
+
+void DetectionTask(void *pdata)
+{
+    
+}
     void StartTask(void* pdata)
     {
         INT8U err;
@@ -840,7 +929,7 @@ void ControlTask(void* pdata)
             printf("Soft timer was started!\n");
         }
 
-        MyTmr_ExtraLoad = OSTmrCreate(0,
+       /* MyTmr_ExtraLoad = OSTmrCreate(0,
                               (CONTROL_PERIOD/100),
                               OS_TMR_OPT_PERIODIC,
                               TmrCallback_ExtraLoad,
@@ -849,15 +938,15 @@ void ControlTask(void* pdata)
                               &err);
         if (err == OS_ERR_NONE) {
             /* Timer was created */
-            printf("Soft timer was created \n");
-        }
+           /* printf("Soft timer was created \n");
+        }*/
 
-        status = OSTmrStart(MyTmr_ExtraLoad,
+       /* status = OSTmrStart(MyTmr_ExtraLoad,
                                     &err);
         if (status > 0 && err == OS_ERR_NONE) {
             /* Timer was started */
-            printf("Soft timer was started!\n");
-        }
+           /* printf("Soft timer was started!\n");
+        }*/
         /*
          * Creation of Kernel Objects
          */
@@ -869,15 +958,13 @@ void ControlTask(void* pdata)
         Mbox_Writeok = OSMboxCreate((void*) 0); /* Empty Mailbox - Write ok */
 
 
-
         //Semaphores
-
         Sem_Vehicle = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Control = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Button = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Switch = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Watchdog = OSSemCreate(1); // binary semaphore (1 key)
-        Sem_ExtraLoad = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_ExtraLoad = OSSemCreate(0); // binary semaphore (1 key)
 
         /*
          * Create statistics task
@@ -940,8 +1027,8 @@ void ControlTask(void* pdata)
                        TASK_STACKSIZE,
                        (void *) 0,
                        OS_TASK_OPT_STK_CHK);
-/*
-        err = OSTaskCreateExt(
+
+     /*   err = OSTaskCreateExt(
                   WatchDogTask, // Pointer to task code
                   NULL,        // Pointer to argument that is
                   // passed to task
@@ -953,7 +1040,21 @@ void ControlTask(void* pdata)
                   TASK_STACKSIZE,
                   (void *) 0,
                   OS_TASK_OPT_STK_CHK);
+  */                
         err = OSTaskCreateExt(
+                  ExtraLoadTask, // Pointer to task code
+                  NULL,        // Pointer to argument that is
+                  // passed to task
+                  &ExtraLoadTask_Stack[TASK_STACKSIZE-1], // Pointer to top
+                  // of task stack
+                  EXTRALOAD_PRIO,
+                  EXTRALOAD_PRIO,
+                  (void *)&ExtraLoadTask_Stack[0],
+                  TASK_STACKSIZE,
+                  (void *) 0,
+                  OS_TASK_OPT_STK_CHK); 
+                  
+      /*  err = OSTaskCreateExt(
                   DetectionTask, // Pointer to task code
                   NULL,        // Pointer to argument that is
                   // passed to task
@@ -966,7 +1067,6 @@ void ControlTask(void* pdata)
                   (void *) 0,
                   OS_TASK_OPT_STK_CHK);
 */
-
         printf("All Tasks and Kernel Objects generated!\n");
         /* Task deletes itself */
 
