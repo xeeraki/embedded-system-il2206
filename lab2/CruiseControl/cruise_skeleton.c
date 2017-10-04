@@ -421,7 +421,7 @@
  //turns off led and cruise control
     void cruise_off()
 {
-    IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,~LED_GREEN_2);
+    IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_GREENLED9_BASE,led_green & ~LED_GREEN_2);
     cruise_control = off;
     show_target_velocity(0);
 }
@@ -446,8 +446,8 @@
                 target = *current_velocity;
                 show_target_velocity((INT8U) (target / 10));
                 //err = OSMboxPost(Mbox_Target, (void *) &target);   POSTED BELOW
-                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_2); // LEDG2 on
                 cruise_control = on;
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green | LED_GREEN_2); // LEDG2 on
             }
         }
     }
@@ -455,12 +455,13 @@
     if( button & BRAKE_PEDAL_FLAG ) {     /* Push Button 2 */
         if(brake_pedal == off) {
             brake_pedal = on;
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_4); // LEDG4 on
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green |LED_GREEN_4); // LEDG4 on
             cruise_off();
         }
     } else {
         if(brake_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_4) // LEDG4 off
+
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green &~LED_GREEN_4); // LEDG4 off
             brake_pedal = off;
         }
     }
@@ -468,12 +469,12 @@
     if( (button & GAS_PEDAL_FLAG) && engine == on) {       /* push button 3 */
         if(gas_pedal == off) {
             gas_pedal = on;
-          IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,LED_GREEN_6); // LEDG6 on
+          IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green | LED_GREEN_6); // LEDG6 on
             cruise_off();
         }
     } else {
         if(gas_pedal == on) {
-            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,~LED_GREEN_6) // LEDG6 off
+            IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_GREENLED9_BASE,led_green &~LED_GREEN_6); // LEDG6 off
             gas_pedal = off;
 
         }
@@ -504,7 +505,7 @@
             if(engine == on) {
                 INT16S* current_velocity = (INT16S*) OSMboxPend(Mbox_Velocity, 0, &err);
                 if(*current_velocity == 0) {
-                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_0);
+                    IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,led_red&~LED_RED_0);
                     engine = off;
                 }
             } // else do nothing,
@@ -513,13 +514,13 @@
 
         if(switches & TOP_GEAR_FLAG) {
             if(top_gear == off) {
-                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,LED_RED_1);
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,led_red |LED_RED_1);
                 top_gear = on;
                 //printf("Turning top gear on\n");
             } // else do nothing
         } else {
             if(top_gear == on) {
-                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,~LED_RED_1);
+                IOWR_ALTERA_AVALON_PIO_DATA (DE2_PIO_REDLED18_BASE,led_red&~LED_RED_1);
                 top_gear = off;
               cruise_off();
                 //printf("Turning top gear off\n");
@@ -527,6 +528,81 @@
         }
       }
     }
+
+void WatchDogTask(void* pdata)
+    {
+        INT8U err;
+        void* msg;
+        INT8U* throttle;
+        printf("Watchdog task created!\n");
+        INT16S* current_output;
+        OS_SEM_DATA sem_data;
+        INT8U err2;
+        int i;
+        while (1)
+        {
+            for (i = 0; i < 10; i++) {
+                start_measurement();
+                stop_measurement();
+                timer_overhead = timer_overhead + time_2 - time_1;
+            }
+    
+            start_measurement();
+            OSSemPend(Sem_Watchdog, 1, &err); // Trying to access the key
+            msg = (char*)OSMboxPend(Mbox_Writeok, 0, &err);
+            current_output = (INT16S*) msg;
+            printf("Watchdog:%d\n", * current_output);
+            if ( * current_output != *msg ) {
+                printf("System overload:%d\n", * current_output);
+            }
+    
+            stop_measurement();
+            float measure = (float) microseconds(ticks - timer_overhead);
+            if (measure > 7600 && measure < 10000) {
+                printf("Overload warning");
+            }
+            printf("Watchdog %5.2f us", (float) microseconds(ticks - timer_overhead));
+            printf("(%d ticks)\n", (int) (ticks - timer_overhead));
+    
+    
+            current_output = 0;
+        }
+    }
+    void DetectionTask(void* pdata)
+    {
+        INT8U err;
+        printf("DetectionTask created!\n");
+        char next[] = "DETECTION";
+        while (1)
+        {
+            OSSemPend(Sem_SignalOk, 0, &err); // Trying to access the key
+            err = OSMboxPost(Mbox_Writeok, (void *) &next);
+            /* Check “err” */
+    
+        }
+    }
+
+void ExtraLoad(void *pdata)
+{
+  INT16U extra_load, factor = CONTROL_PERIOD / 100;
+  INT32S switches;
+  while(1)
+  {
+    OSSemPend(Sem_ExtraLoad,0,&err);
+    switches = (switches_pressed() >> 4) & SWITCH_FLAG; // mask SW9-SW4
+    extra_load = (INT8U) switches << 1; // extra_load = 2 * <value of switches>
+    if(extra_load > 100)
+        extra_load = 100; // in percent of 100ms
+    // set LEDR9-LEDR4 to 0 and then mask with switches
+    led_red = (led_red & ~0x3F0) | (switches << 4);
+    IOWR_ALTERA_AVALON_PIO_DATA(DE2_PIO_REDLED18_BASE, led_red);
+    
+    /* now simulate the work by delaying */
+    extra_load *= factor;
+    OSTimeDlyHMSM(0,0,0, (CONTROL_PERIOD-extra_load));
+  } 
+}
+
 
     /*
      * The task 'VehicleTask' updates the current velocity of the vehicle
@@ -798,6 +874,7 @@ void ControlTask(void* pdata)
         Sem_Switch = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Watchdog = OSSemCreate(1); // binary semaphore (1 key)
         Sem_ExtraLoad = OSSemCreate(1); // binary semaphore (1 key)
+        Sem_SignalOk  = OSSemCreate(1);
 
         /*
          * Create statistics task
@@ -860,7 +937,7 @@ void ControlTask(void* pdata)
                        TASK_STACKSIZE,
                        (void *) 0,
                        OS_TASK_OPT_STK_CHK);
-/*
+
         err = OSTaskCreateExt(
                   WatchDogTask, // Pointer to task code
                   NULL,        // Pointer to argument that is
@@ -886,8 +963,21 @@ void ControlTask(void* pdata)
                   TASK_STACKSIZE,
                   (void *) 0,
                   OS_TASK_OPT_STK_CHK);
+        err = OSTaskCreateExt(
+       OverloadDetection, // Pointer to task code
+       NULL,        // Pointer to argument that is
+                    // passed to task
+       &OverloadDetection_Stack[TASK_STACKSIZE-1], // Pointer to top
+                             // of task stack
+       OVERLOAD_DETECTION_PRIO,
+       OVERLOAD_DETECTION_PRIO,
+       (void *)&OverloadDetection_Stack[0],
+       TASK_STACKSIZE,
+       (void *) 0,
+       OS_TASK_OPT_STK_CHK);
+  
 
-*/
+
 
         printf("All Tasks and Kernel Objects generated!\n");
         /* Task deletes itself */
@@ -916,3 +1006,4 @@ void ControlTask(void* pdata)
 
         return 0;
     }
+
