@@ -10,8 +10,6 @@
     #include <sys/alt_timestamp.h>
     #include <sys/alt_cache.h>
 
-
-
     #define N 8192
 
     #define M 32
@@ -200,11 +198,11 @@ void stop_measurement()
         OSSemPost(Sem_Watchdog); // Releasing the key
 
     }
-   /* void TmrCallback_ExtraLoad()
+    void TmrCallback_ExtraLoad()
     {
         // Post to the semaphore to signal that it's time to run the task.
         OSSemPost(Sem_ExtraLoad); // Releasing the key
-    }*/
+    }
 
     int buttons_pressed(void)
     {
@@ -568,7 +566,7 @@ void stop_measurement()
             if ( switch4 == off ){
                 overload_array[5] = 2;
                 switch4 = on;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
                // printf("Turning Switch 4 ON\n");
             }
            
@@ -576,7 +574,7 @@ void stop_measurement()
          else{
                 overload_array[5] = 0;
                 switch4 = off;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
                // printf("Turning Switch 4 OFF\n");
             }
             
@@ -587,14 +585,14 @@ void stop_measurement()
             {
                 overload_array[4] = 4;
                 switch5 = on;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
             }
            
         }
          else{
                 overload_array[4] = 0;
                 switch5 = off;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
             }
 
         if(switches & SWITCH_6)
@@ -602,13 +600,13 @@ void stop_measurement()
             if ( switch6 == off ){
                 overload_array[3] = 8;
                 switch6 = on;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
                 }
         }
          else{
                 overload_array[3] = 0;
                 switch6 = off; 
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
                 }
 
         if(switches & SWITCH_7)
@@ -616,13 +614,13 @@ void stop_measurement()
             if ( switch7 == off ){
                 overload_array[2] = 16;
                 switch7 = on; 
-                OSSemPost(Sem_ExtraLoad);
+               // OSSemPost(Sem_ExtraLoad);
                 }
         }
          else{
                 overload_array[2] = 0;
                 switch7 = off; 
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
                 }
 
         if(switches & SWITCH_8)
@@ -630,13 +628,13 @@ void stop_measurement()
             if ( switch8 == off ){
                 overload_array[1] = 32;
                 switch8 = on;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
             }
         }
           else{
                 overload_array[1] = 0;
                 switch8 = off;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
             }
 
         if(switches & SWITCH_9)
@@ -644,13 +642,13 @@ void stop_measurement()
             if ( switch9 == off ){
                 overload_array[0] =64;
                 switch9 = on;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
             }
         }
          else{
                 overload_array[0] = 0;
                 switch9 = off;
-                OSSemPost(Sem_ExtraLoad);
+                //OSSemPost(Sem_ExtraLoad);
             }
         
         //int i;
@@ -769,13 +767,13 @@ void ControlTask(void* pdata)
 
 void ExtraLoadTask(void *pdata)
 {
-    int i;
-    int decimal = 0;
+    int i,j;
     int x;
     INT8U err;
     
    while(1)
     {
+         int decimal = 0;
          OSSemPend(Sem_ExtraLoad,0, &err);
          for(i=0; i<6; i++)
             decimal += overload_array[i];
@@ -783,9 +781,9 @@ void ExtraLoadTask(void *pdata)
          printf("Decimal Value %d\n",decimal);
          
          start_measurement();  
-         while(decimal)
+         for(j=0; j<=decimal; j++)
          {
-            for(i=0; i<5000000; i++)
+            for(i=0; i<20; i++) // 20 is a dummy integer
                 x= i;
             decimal--;
          }
@@ -929,7 +927,7 @@ void DetectionTask(void *pdata)
             printf("Soft timer was started!\n");
         }
 
-       /* MyTmr_ExtraLoad = OSTmrCreate(0,
+        MyTmr_ExtraLoad = OSTmrCreate(0,
                               (CONTROL_PERIOD/100),
                               OS_TMR_OPT_PERIODIC,
                               TmrCallback_ExtraLoad,
@@ -938,15 +936,15 @@ void DetectionTask(void *pdata)
                               &err);
         if (err == OS_ERR_NONE) {
             /* Timer was created */
-           /* printf("Soft timer was created \n");
-        }*/
+            printf("Soft timer was created \n");
+        }
 
-       /* status = OSTmrStart(MyTmr_ExtraLoad,
+        status = OSTmrStart(MyTmr_ExtraLoad,
                                     &err);
         if (status > 0 && err == OS_ERR_NONE) {
             /* Timer was started */
-           /* printf("Soft timer was started!\n");
-        }*/
+            printf("Soft timer was started!\n");
+        }
         /*
          * Creation of Kernel Objects
          */
@@ -964,7 +962,7 @@ void DetectionTask(void *pdata)
         Sem_Button = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Switch = OSSemCreate(1); // binary semaphore (1 key)
         Sem_Watchdog = OSSemCreate(1); // binary semaphore (1 key)
-        Sem_ExtraLoad = OSSemCreate(0); // binary semaphore (1 key)
+        Sem_ExtraLoad = OSSemCreate(1); // binary semaphore (1 key)
 
         /*
          * Create statistics task
