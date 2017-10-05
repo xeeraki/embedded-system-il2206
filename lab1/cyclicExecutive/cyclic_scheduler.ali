@@ -1,0 +1,126 @@
+V "GNAT Lib v4.9"
+M P W=b
+P ZX
+
+RN
+RV NO_DELAY
+RV NO_FIXED_POINT
+RV NO_IO
+RV NO_IMPLICIT_DYNAMIC_CODE
+RV NO_RELATIVE_DELAY
+RV NO_STANDARD_STORAGE_POOLS
+RV NO_TASK_HIERARCHY
+RV NO_TASKING
+RV NO_DEFAULT_INITIALIZATION
+RV SPARK_05
+RV MAX_TASKS=1+
+
+U cyclic_scheduler%b	cyclic_scheduler.adb	2b33d872 NE OO SU
+W ada%s			ada.ads			ada.ali
+W ada.calendar.delays%s	a-caldel.adb		a-caldel.ali
+W ada.real_time%s	a-reatim.adb		a-reatim.ali
+W ada.real_time.delays%s  a-retide.adb		a-retide.ali
+W ada.tags%s		a-tags.adb		a-tags.ali
+W ada.text_io%s		a-textio.adb		a-textio.ali
+W system%s		system.ads		system.ali
+W system.img_int%s	s-imgint.adb		s-imgint.ali
+W system.img_lld%s	s-imglld.adb		s-imglld.ali
+W system.parameters%s	s-parame.adb		s-parame.ali
+W system.soft_links%s	s-soflin.adb		s-soflin.ali
+W system.task_info%s	s-tasinf.adb		s-tasinf.ali
+W system.tasking%s	s-taskin.adb		s-taskin.ali
+W system.tasking.stages%s  s-tassta.adb		s-tassta.ali
+W system_function_package%s  system_function_package.adb  system_function_package.ali
+
+D ada.ads		20070406091342 3ffc8e18
+D a-calend.ads		20120515092648 d86d6c8c
+D a-caldel.ads		20140120152337 9f20b83d
+D a-except.ads		20140129161953 f86a4103
+D a-finali.ads		20111121113555 52ecdc1b
+D a-ioexce.ads		20140225151544 e4a01f64
+D a-reatim.ads		20090409150019 63f07669
+D a-retide.ads		20090409150019 081cdaa4
+D a-stream.ads		20140122164720 1a984740
+D a-tags.ads		20111212115430 6c0509d0
+D a-textio.ads		20140129155348 386df5d4
+D a-unccon.ads		20070406091342 f9eb8f06
+D cyclic_scheduler.adb	20170928180154 b5718a6a
+D interfac.ads		20140225151838 69adb1b9
+D i-c.ads		20110801143639 5421119b
+D i-cstrea.ads		20130412125801 8128536b
+D system.ads		20160213141829 90249111
+D s-atacco.ads		20120515093410 4c36d12f
+D s-crtl.ads		20140225151544 840e6817
+D s-exctab.ads		20140225151139 54135002
+D s-ficobl.ads		20120709130952 55a71d43
+D s-finmas.ads		20140225151139 814daec4
+D s-finroo.ads		20120426095924 4ff27390
+D s-imgint.ads		20090409150019 02dbe0c2
+D s-imglld.ads		20090409150019 f3220969
+D s-linux.ads		20140409145429 5b2f79a5
+D s-multip.ads		20101011073009 38ac9f73
+D s-oscons.ads		20160213141902 a445b120
+D s-osinte.ads		20140409145429 59011f13
+D s-parame.ads		20140225151139 ab8cb46a
+D s-pooglo.ads		20110804083314 542f33d0
+D s-soflin.ads		20140225151139 aa763b52
+D s-stache.ads		20140225151139 a37c21ec
+D s-stausa.ads		20110804134155 017a0a05
+D s-stalib.ads		20140225151139 a891183f
+D s-stoele.ads		20140225151139 2dc34a04
+D s-stoele.adb		20140225151139 ed88f8fb
+D s-stopoo.ads		20131010103753 b16154c2
+D s-tasinf.ads		20120730151500 21316953
+D s-taspri.ads		20110927094500 15f617a8
+D s-taprop.ads		20111212143339 1dd2e1b6
+D s-taskin.ads		20140131154341 3f821f32
+D s-tassta.ads		20121029110946 70812003
+D s-traent.ads		20140225151139 b5116092
+D s-unstyp.ads		20140225151139 510692af
+D s-wchcon.ads		20140225151139 1b7d22d2
+D system_function_package.ads  20160826072242 c5dfd1a5
+X 1 ada.ads
+16K9*Ada 19e8 13|1r6 2r5 4r6 5r5
+X 7 a-reatim.ads
+39K13*Real_Time 139e18 13|4w10 5r9
+41O9*Time<duration> 13|19r15 20r22 34r15 35r22 54r16 55r16 56r16
+46O9*Time_Span<duration> 13|21r17 22r16 36r16 37r16
+53V13*Clock{41O9} 13|24s16 39s16 61s21 66s41 76s41 83s41
+55V14*"+"{41O9} 13|25s29 28s38 40s29 43s38 62s27 63s23
+58V14*"-"{46O9} 13|66s47 76s47 83s47
+80V13*To_Duration{duration} 13|66s29 74s16 76s29 83s29
+85V13*Milliseconds{46O9} 13|21s30 22s29 36s29 37s29 62s29 63s25 74s28
+X 11 a-textio.ads
+49K13*Text_IO 471e16 13|1w10 2r9
+242U14*Put 13|66s10 67s10 76s10 77s10 83s10 84s10
+263U14*Put_Line 13|69s10 79s10 85s10 87s10
+X 13 cyclic_scheduler.adb
+10U11*Cyclic_Scheduler 10b11 93l5 93t21
+11i4 X{integer} 29m10 29r15 65r30 68m10
+12i4 Y{integer} 44m10 44r15 75r30 78m10
+14t9 Source_X 18b14 31l8 31t16
+15t9 Source_Y 33b14 46l8 46t16
+16t9 Scheduler 48b14 89l8 89t17
+19o7 Start{7|41O9} 24m7 25r23
+20o7 Next_Release{7|41O9} 25m7 27r22 28m10 28r25
+21o7 Release{7|46O9} 25r31
+22o7 Period{7|46O9} 28r40
+34o7 Start{7|41O9} 39m7 40r23
+35o7 Next_Release{7|41O9} 40m7 42r22 43m10 43r25
+36o7 Release{7|46O9} 40r31
+37o7 Period{7|46O9} 43r40
+50i6 Z{integer} 82m10 85r33
+51i6 X_prime{integer} 65m10 68r15 69r33 82r24
+52i6 Y_prime{integer} 75m10 78r15 79r33 82r32
+54o6 Start{7|41O9} 61m10 62r21 63r17 66r49 76r49 83r49
+55o6 Period{7|41O9} 62m10 86r22
+56o6 Release{7|41O9} 63m6
+X 34 s-stausa.ads
+203U14*Initialize 204i<c,__gnat_stack_usage_initialize>22
+268U14*Output_Results 272i<c,__gnat_stack_usage_output_results>22
+X 47 system_function_package.ads
+4K9*System_Function_Package 13|7w6 8r5 47|8e28
+5V13*System_A{integer} 13|65s21
+6V13*System_B{integer} 13|75s21
+7V13*System_C{integer} 13|82s15
+
