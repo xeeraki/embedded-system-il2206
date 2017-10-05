@@ -71,9 +71,9 @@
     #define VEHICLETASK_PRIO    10
     #define CONTROLTASK_PRIO    12
     #define DETECTIONTASK_PRIO  14
-    #define WATCHDOGTASK_PRIO   6
+    #define WATCHDOGTASK_PRIO   15
     #define EXTRALOAD_PRIO      13
-    #define BUTTON_PRIO        7
+    #define BUTTON_PRIO         7
     #define SWITCH_PRIO         8
 
 
@@ -802,10 +802,10 @@ void WatchDogTask(void *pdata)
     int signal;
     while(1)
     {
-        msg = OSMboxPend(Mbox_Writeok, 2300, &err); // 2300 ms is the time out for watchdog timer. the watchdog waits for 2.3 secs
-        signal = (INT16S*) msg;
+        msg = OSMboxPend(Mbox_Writeok, 70000, &err); // 70k ticks, 2300 ms is the time out for watchdog timer. the watchdog waits for 2.3 secs
+        //signal = *(INT16S*) msg;
         msg = OSMboxAccept(Mbox_Writeok); // Accepts the message and deletes the content in Mbox_Writeok
-        
+        printf("Watchdog task msg %d\n", *((int*)msg));
         if(msg == NULL)
         {
             printf("Overload \n"); // if time out occurs msg is NULL, so we print OVELOAD
@@ -822,6 +822,7 @@ void DetectionTask(void *pdata)
     {
         OSSemPend(Sem_SignalOk,0,&err); // Wait for the exttra Load task to Post the semaphore
         err = OSMboxPost(Mbox_Writeok, (void *) signal); // Write OK in Mbox_Writeok
+        printf("Detection task \n");
     }
 }
     void StartTask(void* pdata)
