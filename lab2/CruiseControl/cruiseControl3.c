@@ -789,7 +789,8 @@ void ExtraLoadTask(void *pdata)
          }
          stop_measurement();
          printf(" Time Measured : %5.2f ms\n", (float) microseconds(ticks - timer_overhead));
-         
+         printf("(%d ticks)\n", (int) (ticks - timer_overhead));
+       
          OSSemPost(Sem_SignalOk);
     }
 }
