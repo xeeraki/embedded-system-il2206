@@ -113,7 +113,6 @@
     alt_u32 ticks;
     alt_u32 time_1;
     alt_u32 time_2;
-    alt_u32 timer_overhead;
     /*
      * Types
      */
@@ -788,8 +787,8 @@ void ExtraLoadTask(void *pdata)
             decimal--;
          }
          stop_measurement();
-         printf(" Time Measured : %5.2f ms\n", (float) microseconds(ticks - timer_overhead));
-         printf("(%d ticks)\n", (int) (ticks - timer_overhead));
+         printf(" Time Measured : %5.2f ms\n", (float) microseconds(ticks));
+         printf("(%d ticks)\n", (int) (ticks));
        
          OSSemPost(Sem_SignalOk);
     }
